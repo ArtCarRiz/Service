@@ -1,0 +1,3 @@
+Carlos daniel|Cardenas|Rizo|02/02/1989|7441580334|temporal5@gmail.com|User5|contra5|Ma|7441580334|CARA030303HGRRZRA3|3|
+Angel||Martinez|02/02/1989|7441580334|temporal5@gmail.com|User5|contra5|Ma|7441580334|CARA030303HGRRZRA3|3|
+Arturo|Cardenas|Zaragosa|02/02/1989|7441580334|temporal5@gmail.com|User5||Ma|7441580334|CARA030303HGRRZRA3|3|
