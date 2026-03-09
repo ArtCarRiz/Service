@@ -6,46 +6,36 @@ package com.DIGIS01.ACardenasProgramacionNCapas.DAO;
 
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Result;
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Rol;
+import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Usuario;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.CallableStatementCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public class RolDAOImplementation implements IRol{
     
     @Autowired
-    JdbcTemplate jdbcTemplate;
+    private EntityManager entityManager; //jpa
     
     @Override
+    @Transactional
     public Result GetAll(){
         Result result = new Result();
         
         try {
-            
-            jdbcTemplate.execute("{CALL ROLGETALLSP (?)}", (CallableStatementCallback<Boolean>) callablestatement ->{
-                
-                callablestatement.registerOutParameter(1, java.sql.Types.REF_CURSOR);
-                callablestatement.execute();
-                
-                ResultSet resultSet = (ResultSet) callablestatement.getObject(1);
-                
-                result.objects = new ArrayList<>();
-                
-                while (resultSet.next()) {
-                    Rol rol = new Rol();
-                    result.objects.add(rol);
-                    
-                    rol.setIdRol(resultSet.getInt("IDROL"));
-                    rol.setNombreRol(resultSet.getString("NOMBREROL"));
-                    
-                }
-                
-                return true;
-            });
-            
+        
+            TypedQuery <Rol> queRol = entityManager.createQuery("From Rol", Rol.class);
+            List <Rol> rol = queRol.getResultList();
+
+            result.objects = (List<Object>) (Object) rol;
+            result.correct = true;
             
         } catch (Exception e) {
             result.correct = false;

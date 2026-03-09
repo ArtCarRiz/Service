@@ -5,13 +5,18 @@
 package com.DIGIS01.ACardenasProgramacionNCapas.DAO;
 
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Estado;
+import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Municipio;
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Result;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.CallableStatementCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -21,34 +26,28 @@ import org.springframework.stereotype.Repository;
 public class EstadoDAOImplementation implements IEstado {
 
     @Autowired
-    JdbcTemplate jdbcTemplate;
+    EntityManager entityManager;
 
     @Override
+    @Transactional
     public Result GetAll(int identificador) {
         Result result = new Result();
 
         try {
-            jdbcTemplate.execute("{CALL EstadosByPaisSP (?, ?)}", (CallableStatementCallback<Boolean>) callableStatement -> {
 
-                callableStatement.registerOutParameter(1, java.sql.Types.REF_CURSOR);
-                callableStatement.setInt(2, identificador);
-                callableStatement.execute();
+//            TypedQuery<Estado> queryEstado = entityManager.createQuery("From Estado", Estado.class);
+            //
+            String hql = "FROM Estado e WHERE e.pais.IdPais = :identificador";
 
-                ResultSet resultSet = (ResultSet) callableStatement.getObject(1);
+            TypedQuery<Estado> queryEstado = entityManager.createQuery(hql, Estado.class);
 
-                result.objects = new ArrayList<>();
+            queryEstado.setParameter("identificador", identificador);
+            //
+            List<Estado> estado = queryEstado.getResultList();
 
-                while (resultSet.next()) {
-                    Estado estado = new Estado();
-                    result.objects.add(estado);
+            result.objects = (List<Object>) (Object) estado;
+            result.correct = true;
 
-                    estado.setIdEstado(resultSet.getInt("IDESTADO"));
-                    estado.setNombre(resultSet.getString("NOMBRE"));
-
-                }
-
-                return true;
-            });
         } catch (Exception e) {
             result.correct = false;
             result.errorMessage = e.getLocalizedMessage();
@@ -57,6 +56,5 @@ public class EstadoDAOImplementation implements IEstado {
 
         return result;
     }
-
 
 }

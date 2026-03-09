@@ -11,5 +11,5 @@ import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Result;
  * @author digis
  */
 public interface IMunicipio {
-    Result GetAll(int IdEstado);
+    Result GetAll(int identificador);
 }

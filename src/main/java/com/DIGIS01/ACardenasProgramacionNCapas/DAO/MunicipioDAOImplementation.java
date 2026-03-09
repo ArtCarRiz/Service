@@ -5,61 +5,48 @@
 package com.DIGIS01.ACardenasProgramacionNCapas.DAO;
 
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Municipio;
+import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Pais;
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Result;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.CallableStatementCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import java.sql.ResultSet;
 import java.util.ArrayList;
-
+import java.util.List;
 
 /**
  *
  * @author digis
  */
 @Repository
-public class MunicipioDAOImplementation implements IMunicipio{
-    
+public class MunicipioDAOImplementation implements IMunicipio {
+
     @Autowired
-    JdbcTemplate jdbcTemplate;
-    
+    EntityManager entityManager;
+
     @Override
-    public Result GetAll(int IdEstado){
+    public Result GetAll(int identificador) {
         Result result = new Result();
-        
+
         try {
-            jdbcTemplate.execute("{CALL MunicipiosByEstadoSP (?, ?)}", (CallableStatementCallback<Boolean>) callableStatement ->{
-               
-                callableStatement.registerOutParameter(1, java.sql.Types.REF_CURSOR);
-                callableStatement.setInt(2, IdEstado);
-                callableStatement.execute();
-                
-                
-                ResultSet resultset =(ResultSet) callableStatement.getObject(1);
-                result.objects = new ArrayList<>();
-                
-                while (resultset.next()) {                    
-                    Municipio municipio = new Municipio();
-                    result.objects.add(municipio);
-                    
-                    municipio.setIdMunicipio(resultset.getInt("IDMUNICIPIO"));
-                    municipio.setNombre(resultset.getString("NOMBRE"));
-                }
-                
-                
-                
-                return true;
-            });
-            
+            String hql = "FROM Municipio e WHERE e.estado.IdEstado = :identificador";
+            TypedQuery<Municipio> queryMunicipio = entityManager.createQuery(hql, Municipio.class);
+            queryMunicipio.setParameter("identificador", identificador);
+            List<Municipio> municipio = queryMunicipio.getResultList();
+
+            result.objects = (List<Object>) (Object) municipio;
+            result.correct = true;
+
         } catch (Exception e) {
             result.correct = false;
             result.errorMessage = e.getLocalizedMessage();
             result.ex = e;
         }
-        
-        
+
         return result;
     }
-    
+
 }

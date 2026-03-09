@@ -218,12 +218,12 @@ public class UsuarioDAOJPAImplementation implements IUsuarioJPA {
 
     @Override
     @Transactional
-    public Result UpdateDireccion(Direccion direccion, int identificador) {
+    public Result UpdateDireccion(Direccion direccion) {
         Result result = new Result();
 
         try {
             
-            Direccion direccionAntigua = entityManager.find(Direccion.class, identificador);
+            Direccion direccionAntigua = entityManager.find(Direccion.class, direccion.getIdDireccion());
             
             direccionAntigua.setCalle(direccion.getCalle());
             direccionAntigua.setNumeroInterior(direccion.getNumeroInterior());
@@ -297,5 +297,28 @@ public class UsuarioDAOJPAImplementation implements IUsuarioJPA {
 
         return result;
     }
+
+    @Override
+    @Transactional
+    public Result UpdateImage(int identificador, String imagen) {
+        Result result = new Result();
+
+        try {
+            
+            Usuario usuarioJpa = entityManager.find(Usuario.class, identificador);
+            usuarioJpa.setImagen(imagen);
+            entityManager.merge(usuarioJpa);
+            result.correct = true;
+            
+        } catch (Exception e) {
+            result.correct = false;
+            result.errorMessage = e.getLocalizedMessage();
+            result.ex = e;
+        }
+        
+        return result;
+    }
+    
+    
 
 }

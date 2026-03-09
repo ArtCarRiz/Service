@@ -21,7 +21,8 @@ public interface IUsuarioJPA {
     Result AddDireccion (Direccion direccion, int identificador);
     Result DeleteDireccion (int identificador);
     Result GetByIdDireccion(int identificador);
-    Result UpdateDireccion (Direccion direccion, int identificador);
+    Result UpdateDireccion (Direccion direccion);
     Result UpdateUsuario (Usuario usuario);
     Result UpdateEstatus (int identificador, int estatus);
+    Result UpdateImage (int identificador, String imagen);
 }

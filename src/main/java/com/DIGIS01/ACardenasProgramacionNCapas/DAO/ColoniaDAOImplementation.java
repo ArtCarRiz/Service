@@ -6,12 +6,16 @@ package com.DIGIS01.ACardenasProgramacionNCapas.DAO;
 
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Colonia;
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Result;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.CallableStatementCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -21,35 +25,23 @@ import org.springframework.stereotype.Repository;
 public class ColoniaDAOImplementation implements IColonia {
 
     @Autowired
-    JdbcTemplate jdbcTemplate;
-
+    EntityManager entityManager;
+    
     @Override
+    @Transactional
     public Result GetAll(int identificador) {
         Result result = new Result();
 
         try {
-            jdbcTemplate.execute("{CALL ColoniaByMunicipioPS (?, ?)}", (CallableStatementCallback<Boolean>) callableStatement -> {
-
-                callableStatement.registerOutParameter(1, java.sql.Types.REF_CURSOR);
-                callableStatement.setInt(2, identificador);
-                callableStatement.execute();
-
-                ResultSet resultset = (ResultSet) callableStatement.getObject(1);
-                result.objects = new ArrayList<>();
-
-                while (resultset.next()) {
-                    Colonia colonia = new Colonia();
-                    result.objects.add(colonia);
-                    
-                    colonia.setIdColonia(resultset.getInt("IDCOLONIA"));
-                    colonia.setNombre(resultset.getString("NOMBRE"));
-                    colonia.setCodigoPostal(resultset.getString("CODIGOPOSTAL"));
-                    
-                }
-
-                return true;
-            });
-
+            String hql = "From Colonia e WHERE e.municipio.IdMunicipio = :identificador";
+            
+            TypedQuery<Colonia> queryColonia = entityManager.createQuery(hql, Colonia.class);
+            queryColonia.setParameter("identificador", identificador);
+            List<Colonia> colonia = queryColonia.getResultList();
+            
+            result.objects = (List<Object>) (Object) colonia;
+            result.correct = true;
+            
         } catch (Exception e) {
             result.correct = false;
             result.errorMessage = e.getLocalizedMessage();
