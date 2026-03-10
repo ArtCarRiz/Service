@@ -36,6 +36,7 @@ public class EstadoDAOImplementation implements IEstado {
         try {
 
 //            TypedQuery<Estado> queryEstado = entityManager.createQuery("From Estado", Estado.class);
+
             //
             String hql = "FROM Estado e WHERE e.pais.IdPais = :identificador";
 

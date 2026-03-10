@@ -17,7 +17,9 @@ import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Usuario;
 import java.util.Base64;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -36,6 +39,7 @@ import org.springframework.web.multipart.MultipartFile;
  */
 @RestController
 @RequestMapping("api/usuario")
+//@CrossOrigin(origins = "http://localhost:127.0.0.1:8081")
 public class UsuarioRestController {
 
     @Autowired
@@ -101,9 +105,16 @@ public class UsuarioRestController {
 
     }
 
-    @PostMapping
-    public ResponseEntity Add(@RequestBody Usuario usuario) {
+    @PostMapping (consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity Add(@RequestPart ("datos") Usuario usuario, @RequestPart(name = "imagen", required = false) MultipartFile imagen) {
         try {
+            
+            if (imagen != null && !imagen.isEmpty()) {
+                byte[] bytes = imagen.getBytes();
+                String base64 = Base64.getEncoder().encodeToString(bytes);
+                usuario.setImagen(base64);
+            }
+            
             Result result = usuarioDAOJPAImplementation.Add(usuario);
 
             if (result.correct) {
@@ -242,7 +253,7 @@ public class UsuarioRestController {
         try {
             Result result = paisDAOImplementation.GetAll();
             if (result.correct) {
-                return ResponseEntity.ok(result.objects);
+                return ResponseEntity.ok(result);
             }else{
                 return ResponseEntity.badRequest().body(result.errorMessage);
             }
@@ -270,7 +281,7 @@ public class UsuarioRestController {
         try {
             Result result = municipioDAOImplementation.GetAll(identificador);
             if (result.correct) {
-                return ResponseEntity.ok(result.objects);
+                return ResponseEntity.ok(result);
             }else{
                 return ResponseEntity.badRequest().body(result.errorMessage);
             }
@@ -285,7 +296,7 @@ public class UsuarioRestController {
         try {
             Result result = coloniaDAOImplementation.GetAll(identificador);
             if (result.correct) {
-                return ResponseEntity.ok(result.objects);
+                return ResponseEntity.ok(result);
             }else{
                 return ResponseEntity.badRequest().body(result.errorMessage);
             }

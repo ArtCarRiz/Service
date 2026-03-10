@@ -10,12 +10,12 @@ import java.util.List;
  *
  * @author digis
  */
-public class Result {
-    
+public class Result<T> {
+
     public boolean correct;
     public String errorMessage;
     public Exception ex;
-    public Object object;
-    public List<Object> objects;
-    
+    public T object; //devolver de un solo registro
+    public List<T> objects; //devolver de mas de un registro 
+
 }
