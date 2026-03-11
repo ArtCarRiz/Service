@@ -91,7 +91,7 @@ public class UsuarioRestController {
 
             if (result.correct) {
                 if (result.object != null) {
-                    return ResponseEntity.ok(result.object);
+                    return ResponseEntity.ok(result);
                 } else {
                     return ResponseEntity.notFound().build();
                 }
@@ -150,7 +150,7 @@ public class UsuarioRestController {
         try {
             result = usuarioDAOJPAImplementation.GetByIdDireccion(identificador);
             if (result.correct) {
-                return ResponseEntity.ok(result.object);
+                return ResponseEntity.ok(result);
             } else {
                 return ResponseEntity.badRequest().body(result.errorMessage);
             }
@@ -165,7 +165,7 @@ public class UsuarioRestController {
         try {
             Result result = usuarioDAOJPAImplementation.DeleteDireccion(identificador);
             if (result.correct) {
-                return ResponseEntity.ok("exito en el borrado" + result.object);
+                return ResponseEntity.ok("exito en el borrado " + result);
             } else {
                 return ResponseEntity.badRequest().body(result.errorMessage);
             }
@@ -175,8 +175,8 @@ public class UsuarioRestController {
         }
     }
 
-    @DeleteMapping("/Delete/Usuario")
-    public ResponseEntity DeleteUsuario(@RequestParam("identificador") int identificador) {
+    @DeleteMapping("/Delete/Usuario/{identificador}")
+    public ResponseEntity DeleteUsuario(@PathVariable("identificador") int identificador) {
         try {
             Result result = usuarioDAOJPAImplementation.DeleteUsuario(identificador);
             if (result.correct) {
@@ -227,6 +227,20 @@ public class UsuarioRestController {
             if (true) {
                 return ResponseEntity.ok().body(result);
             } else {
+                return ResponseEntity.badRequest().body(result.errorMessage);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(e.getLocalizedMessage());
+        }
+    }
+    
+    @PatchMapping("/Estatus")
+    public ResponseEntity UpdateEstatus(@RequestParam("identificador") int identificador, @RequestParam("estatus") int estatus){
+        try {
+            Result result = usuarioDAOJPAImplementation.UpdateEstatus(identificador, estatus);
+            if (result.correct) {
+                return ResponseEntity.ok().body(result);
+            }else{
                 return ResponseEntity.badRequest().body(result.errorMessage);
             }
         } catch (Exception e) {
