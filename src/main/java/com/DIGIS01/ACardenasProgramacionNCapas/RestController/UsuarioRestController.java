@@ -17,6 +17,8 @@ import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Municipio;
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Result;
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Rol;
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Usuario;
+import com.DIGIS01.ACardenasProgramacionNCapas.Service.ValidationService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -38,9 +40,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.repository.query.Param;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -53,6 +58,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -82,6 +88,11 @@ public class UsuarioRestController {
     @Autowired
     ColoniaDAOImplementation coloniaDAOImplementation;
 
+    @Autowired
+    ValidationService validationService;
+
+//    @Autowired
+//    private HttpServletRequest request;
     @GetMapping
     public ResponseEntity GetAll() {
         try {
@@ -105,6 +116,12 @@ public class UsuarioRestController {
         }
     }
 
+    /**
+     * GetById del usuario con direcccion
+     *
+     * @param idusuario el identificador del usuario
+     * @return la info completa del usuario
+     */
     @GetMapping("{idusuario}")
     public ResponseEntity GetById(@PathVariable("idusuario") int idusuario) {
 
@@ -127,6 +144,12 @@ public class UsuarioRestController {
 
     }
 
+    /**
+     * GetById del usuario con direcciion
+     *
+     * @param idusuario el identificador del usuario
+     * @return la info completa del usuario
+     */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity Add(@RequestPart("datos") Usuario usuario, @RequestPart(name = "imagen", required = false) MultipartFile imagen) {
         try {
@@ -150,6 +173,13 @@ public class UsuarioRestController {
         }
     }
 
+    /**
+     * Agrega la direccion de un solo usuario
+     *
+     * @param direccion objeto json por @RequestBody
+     * @param identificador id del usuario por @RequestParam
+     * @return la info completa del usuario
+     */
     @PostMapping("/Direccion")
     public ResponseEntity AddDireccion(@RequestBody Direccion direccion, @RequestParam("identificador") int identificador) {
         try {
@@ -166,6 +196,12 @@ public class UsuarioRestController {
         }
     }
 
+    /**
+     * OBtiene toda la info de una sola direccion
+     *
+     * @param idusuario el identificador del usuario
+     * @return la info completa del usuario
+     */
     @GetMapping("/Direccion/{IdDireccion}")
     public ResponseEntity GetByIdDireccion(@PathVariable("IdDireccion") int identificador) {
         Result result = new Result();
@@ -182,6 +218,12 @@ public class UsuarioRestController {
         }
     }
 
+    /**
+     * Borra una sola direccion
+     *
+     * @param idusuario el identificador del usuario
+     * @return la info completa del usuario
+     */
     @DeleteMapping("/Delete/Direccion")
     public ResponseEntity DeleteDireccion(@RequestParam("identificador") int identificador) {
         try {
@@ -197,6 +239,11 @@ public class UsuarioRestController {
         }
     }
 
+    /**
+     *
+     * @param identificador id del usuario
+     * 
+     */
     @DeleteMapping("/Delete/Usuario/{identificador}")
     public ResponseEntity DeleteUsuario(@PathVariable("identificador") int identificador) {
         try {
@@ -212,6 +259,9 @@ public class UsuarioRestController {
         }
     }
 
+    /**
+     * @param usuario  un json usuario por medio del cuerpo
+     */
     @PutMapping
     public ResponseEntity UpdateUsuario(@RequestBody Usuario usuario) {
         try {
@@ -226,6 +276,10 @@ public class UsuarioRestController {
         }
     }
 
+    /**
+     * @param direccion object de direccion
+     * @return result
+     */
     @PutMapping("/Direccion")
     public ResponseEntity UpdateDireccion(@RequestBody Direccion direccion) {
         try {
@@ -241,6 +295,10 @@ public class UsuarioRestController {
         }
     }
 
+    /**
+     * @param identificador id del usuario 
+     * @param  imagen por @requestParam un multipartfile de la img
+     */
     @PostMapping(value = "/Imagen", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity UpdateImagen(@RequestParam("identificador") int identificador, @RequestParam("imagenFile") MultipartFile imagen) {
         Result result = new Result();
@@ -260,6 +318,7 @@ public class UsuarioRestController {
         }
     }
 
+
     @PatchMapping("/Estatus")
     public ResponseEntity UpdateEstatus(@RequestParam("identificador") int identificador, @RequestParam("estatus") int estatus) {
         try {
@@ -274,6 +333,9 @@ public class UsuarioRestController {
         }
     }
 
+    /**
+     * @return result
+     */
     @GetMapping("/Rol")
     public ResponseEntity GetAllRol() {
         try {
@@ -288,6 +350,9 @@ public class UsuarioRestController {
         }
     }
 
+    /**
+     * @return result
+     */
     @GetMapping("/Pais")
     public ResponseEntity GetAllPais() {
         try {
@@ -302,6 +367,9 @@ public class UsuarioRestController {
         }
     }
 
+    /**
+     * @return result
+     */
     @GetMapping("/Estado")
     public ResponseEntity GetAllEstado(@RequestParam("identificador") int identificador) {
         try {
@@ -316,6 +384,9 @@ public class UsuarioRestController {
         }
     }
 
+    /**
+     * @return result
+     */
     @GetMapping("/Municipio")
     public ResponseEntity GetAllMunicipio(@RequestParam("identificador") int identificador) {
         try {
@@ -331,6 +402,9 @@ public class UsuarioRestController {
         }
     }
 
+    /**
+     * @return result
+     */
     @GetMapping("/Colonia")
     public ResponseEntity GetAllColonia(@RequestParam("identificador") int identificador) {
         try {
@@ -345,8 +419,13 @@ public class UsuarioRestController {
         }
     }
 
+    /**
+     * @param archivo  un multipartfile por medio de @requestpart
+     * @param session no se envia nada
+     * @return result
+     */
     @PostMapping("/cargarArchivo")
-    public ResponseEntity<String> CargaArchivo(@RequestPart("archivo") MultipartFile archivo, HttpSession session) {
+    public ResponseEntity CargaArchivo(@RequestPart("archivo") MultipartFile archivo, HttpSession session) {
         Result result = new Result();
         List<Usuario> usuarios = new ArrayList<>();
         try {
@@ -376,11 +455,15 @@ public class UsuarioRestController {
                 }
 
                 if (errores.isEmpty()) {
-                    registrarEnBitacora(rutaArchivo, "SUCCESS", "Carga completada correctamente");
+
+                    String llaveSession = registrarEnBitacora(rutaArchivo, "SUCCESS", "Carga completada correctamente");
+                    session.setAttribute(llaveSession, rutaArchivo);
+                    ProcesarCargaMasiva(llaveSession, session);
                     result.correct = true;
 
                 } else {
-                    registrarEnBitacora(rutaArchivo, "FAILED", result.errorMessage);
+                    //mandar los n errores a la vista
+                    registrarEnBitacora(rutaArchivo, "FAILED", errores.get(0).descripcion);
                 }
 
             }
@@ -465,25 +548,25 @@ public class UsuarioRestController {
         List<ErroresArchivo> errores = new ArrayList<>();
         int numeroFila = 1; // sin encabezados
 
-        if (usuarios.isEmpty()) {
+        if (!usuarios.isEmpty()) {
 
             for (Usuario usuario : usuarios) {
 
-//                BindingResult bindingResult = validationService.ValidateObject(usuario);
-//
-//                if (bindingResult.hasErrors()) {
-//                    ErroresArchivo erroresArchivo = new ErroresArchivo();
-//                    for (ObjectError objectError : bindingResult.getAllErrors()) {
-//
-////                    erroresArchivo.dato = objectError.getObjectName();
-//                        erroresArchivo.dato = ((FieldError) objectError).getField();
-//                        erroresArchivo.descripcion = objectError.getDefaultMessage();
-//                        erroresArchivo.fila = numeroFila;
-//
-//                        errores.add(erroresArchivo);
-//                    }
-//
-//                }
+                BindingResult bindingResult = validationService.ValidateObject(usuario);
+
+                if (bindingResult.hasErrors()) {
+                    ErroresArchivo erroresArchivo = new ErroresArchivo();
+                    for (ObjectError objectError : bindingResult.getAllErrors()) {
+
+                        erroresArchivo.dato = objectError.getObjectName();
+                        erroresArchivo.dato = ((FieldError) objectError).getField();
+                        erroresArchivo.descripcion = objectError.getDefaultMessage();
+                        erroresArchivo.fila = numeroFila;
+
+                        errores.add(erroresArchivo);
+                    }
+
+                }
                 numeroFila++;
             }
         } else {
@@ -506,21 +589,64 @@ public class UsuarioRestController {
         }
     }
 
-    public void registrarEnBitacora(String rutaArchivo, String estatus, String detalleError) {
+    public String registrarEnBitacora(String rutaArchivo, String estatus, String detalleError) {
         String RUTA_LOG = "src/main/resources/log/bitacora.txt";
-        String key = generarKeySHA256(rutaArchivo);
+        String key = null;
+        if (estatus == "SUCCESS") {
+            key = generarKeySHA256(rutaArchivo);
+        }
         String fechaHora = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
         // Formato: key|ruta|estatus|fechahora|detalleDelError
         String linea = String.format("%s|%s|%s|%s|%s",
-                key, rutaArchivo, estatus, fechaHora, (detalleError == null ? "" : detalleError));
-
+                key, rutaArchivo, estatus, fechaHora, (detalleError == null ? "Sin detalles" : detalleError));
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(RUTA_LOG, true))) {
             writer.write(linea);
             writer.newLine();
         } catch (IOException e) {
             System.err.println("Error escribiendo en la bitácora: " + e.getMessage());
         }
+        return key;
+    }
+
+    @GetMapping("/cargaMasiva/procesar/{uuid}")
+    public ResponseEntity ProcesarCargaMasiva(@PathVariable("uuid") String key, HttpSession session) {
+
+        Result result = new Result();
+        List<Usuario> usuarios = new ArrayList<>();
+
+        try {
+            String llaveSession = key;
+            Object objetoRuta = session.getAttribute(llaveSession);
+
+            if (objetoRuta == null) {
+                return ResponseEntity.status(500).body("n");
+            }
+
+            String rutaReal = objetoRuta.toString();
+            File archivoFile = new File(rutaReal);
+
+            String extension = rutaReal.substring(rutaReal.lastIndexOf(".") + 1);
+            if (extension.equals("txt")) {
+                usuarios = LecturaArchivoTxt(archivoFile);
+            } else {
+//                usuarios = LecturaArchivoXLSX(archivoFile);
+            }
+
+            for (Usuario usuario : usuarios) {
+                result = usuarioDAOJPAImplementation.Add(usuario);
+            }
+
+            if (result.correct) {
+                session.removeAttribute(llaveSession);// Limpiar sesión
+                return ResponseEntity.ok().body("Usuarios cargador correctamente");
+            } else {
+                return ResponseEntity.badRequest().body(result.errorMessage);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(e.getLocalizedMessage());
+        }
+
     }
 
 }

@@ -34,53 +34,72 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idusuario")
     private int IdUsuario;
-    @Column (name = "nombre")
+    
+    
+    @Column(name = "nombre")
     private String Nombre;
-    @Column (name = "apellidopaterno")
+    
+    
+    @Column(name = "apellidopaterno")
     private String ApellidoPaterno;
-    @Column (name = "apellidomaterno")
+    
+    
+    @Column(name = "apellidomaterno")
     private String ApellidoMaterno;
 
-   @Temporal(TemporalType.DATE)
-   @Column(name = "fechanacimiento")
-    private Date FechaNacimiento; 
     
     
-    @Column (name = "telefono")
+    @Temporal(TemporalType.DATE)
+    @Column(name = "fechanacimiento")
+    private Date FechaNacimiento;
+
+    
+    
+    @Column(name = "telefono")
     private String Telefono;
 
-    @Column (name = "email")
+    
+    
+    @Column(name = "email")
     private String Email;
+
     
-    @Column (name = "username")
+    
+    @Column(name = "username")
     private String Username;
+
     
-    @Column (name = "password")
+    
+    @Column(name = "password")
     private String Password;
 
-    @Column (name = "sexo")
+    
+    @Column(name = "sexo")
     private String Sexo;
 
-    @Column (name = "celular")
-    private String Celular;
     
-    @Column (name = "curp")
+    @Column(name = "celular")
+    private String Celular;
+
+    @Column(name = "curp")
     private String Curp;
 
     @Lob
     @Column(name = "imagen", columnDefinition = "CLOB")
     public String Imagen;
+
     
-    @Column (name = "estatus")
+    @Column(name = "estatus")
     public int Estatus;
 
-    @OneToMany (mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
     public List<Direccion> Direcciones;
-    
+
     @ManyToOne
     @JoinColumn(name = "idrol") // FK
     public com.DIGIS01.ACardenasProgramacionNCapas.JPA.Rol Rol;
-    
+
     public Usuario() {
     }
 
@@ -100,6 +119,7 @@ public class Usuario {
         this.Estatus = Estatus;
     }
 //    public List<ML.Direccion> Direcciones;
+
     public void setIdUsuario(int IdUsuario) {
         this.IdUsuario = IdUsuario;
     }
@@ -147,6 +167,7 @@ public class Usuario {
     public Date getFechaNacimiento() {
         return FechaNacimiento;
     }
+
     public void setTelefono(String Telefono) {
         this.Telefono = Telefono;
     }
@@ -210,7 +231,6 @@ public class Usuario {
     public void setImagen(String Imagen) {
         this.Imagen = Imagen;
     }
-    
 
     public void setRol(Rol rol) {
         this.Rol = rol;
