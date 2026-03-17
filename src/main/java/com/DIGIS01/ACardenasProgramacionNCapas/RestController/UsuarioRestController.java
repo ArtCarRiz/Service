@@ -24,6 +24,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -242,7 +243,7 @@ public class UsuarioRestController {
     /**
      *
      * @param identificador id del usuario
-     * 
+     *
      */
     @DeleteMapping("/Delete/Usuario/{identificador}")
     public ResponseEntity DeleteUsuario(@PathVariable("identificador") int identificador) {
@@ -260,7 +261,7 @@ public class UsuarioRestController {
     }
 
     /**
-     * @param usuario  un json usuario por medio del cuerpo
+     * @param usuario un json usuario por medio del cuerpo
      */
     @PutMapping
     public ResponseEntity UpdateUsuario(@RequestBody Usuario usuario) {
@@ -296,8 +297,8 @@ public class UsuarioRestController {
     }
 
     /**
-     * @param identificador id del usuario 
-     * @param  imagen por @requestParam un multipartfile de la img
+     * @param identificador id del usuario
+     * @param imagen por @requestParam un multipartfile de la img
      */
     @PostMapping(value = "/Imagen", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity UpdateImagen(@RequestParam("identificador") int identificador, @RequestParam("imagenFile") MultipartFile imagen) {
@@ -317,7 +318,6 @@ public class UsuarioRestController {
             return ResponseEntity.status(500).body(e.getLocalizedMessage());
         }
     }
-
 
     @PatchMapping("/Estatus")
     public ResponseEntity UpdateEstatus(@RequestParam("identificador") int identificador, @RequestParam("estatus") int estatus) {
@@ -420,12 +420,12 @@ public class UsuarioRestController {
     }
 
     /**
-     * @param archivo  un multipartfile por medio de @requestpart
+     * @param archivo un multipartfile por medio de @requestpart
      * @param session no se envia nada
      * @return result
      */
-    @PostMapping("/cargarArchivo")
-    public ResponseEntity CargaArchivo(@RequestPart("archivo") MultipartFile archivo, HttpSession session) {
+    @PostMapping(value = "/cargarArchivo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity CargaArchivo(@RequestPart(name = "archivo", required = true) MultipartFile archivo, HttpSession session) {
         Result result = new Result();
         List<Usuario> usuarios = new ArrayList<>();
         try {
@@ -453,17 +453,24 @@ public class UsuarioRestController {
                 if (!usuarios.isEmpty()) {
                     errores = ValidarDatos(usuarios);
                 }
-
+                String key = null;
                 if (errores.isEmpty()) {
+                    key = generarKeySHA256(rutaArchivo);
+                    String llaveSession = registrarEnBitacora(rutaArchivo, "SUCCESS", "CARGADA", key);
 
-                    String llaveSession = registrarEnBitacora(rutaArchivo, "SUCCESS", "Carga completada correctamente");
                     session.setAttribute(llaveSession, rutaArchivo);
-                    ProcesarCargaMasiva(llaveSession, session);
+                    session.setMaxInactiveInterval(120);
                     result.correct = true;
+                    result.object = key;
+                    result.errorMessage = "Archivo validado correctamente";
 
                 } else {
                     //mandar los n errores a la vista
-                    registrarEnBitacora(rutaArchivo, "FAILED", errores.get(0).descripcion);
+                    registrarEnBitacora(rutaArchivo, "FAILED", errores.get(0).descripcion, key);
+
+                    result.correct = false;
+                    result.objects = errores; //object o objects? 
+                    result.errorMessage = "El archivo contiene errores de validación";
                 }
 
             }
@@ -473,7 +480,7 @@ public class UsuarioRestController {
             result.ex = e;
         }
 
-        return ResponseEntity.ok("Archivo procesado correctamente");
+        return ResponseEntity.ok(result);
     }
 
     public List<Usuario> LecturaArchivoTxt(File archivo) {
@@ -589,12 +596,8 @@ public class UsuarioRestController {
         }
     }
 
-    public String registrarEnBitacora(String rutaArchivo, String estatus, String detalleError) {
+    public String registrarEnBitacora(String rutaArchivo, String estatus, String detalleError, String key) {
         String RUTA_LOG = "src/main/resources/log/bitacora.txt";
-        String key = null;
-        if (estatus == "SUCCESS") {
-            key = generarKeySHA256(rutaArchivo);
-        }
         String fechaHora = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
         // Formato: key|ruta|estatus|fechahora|detalleDelError
@@ -609,22 +612,66 @@ public class UsuarioRestController {
         return key;
     }
 
-    @GetMapping("/cargaMasiva/procesar/{uuid}")
-    public ResponseEntity ProcesarCargaMasiva(@PathVariable("uuid") String key, HttpSession session) {
+    private String buscarRutaEnBitacora(String keyBuscada) {
+        File bitacora = new File("src/main/resources/log/bitacora.txt");
+        if (!bitacora.exists()) {
+            return null;
+        }
+
+        try (BufferedReader br = new BufferedReader(new FileReader(bitacora))) {
+            String linea;
+            while ((linea = br.readLine()) != null) {
+
+                String[] columnas = linea.split("\\|");
+                if (columnas.length >= 2 && columnas[0].equals(keyBuscada)) {
+                    return columnas[1]; // la ruta
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error leyendo bitácora: " + e.getMessage());
+        }
+        return null;
+    }
+
+    private boolean verificarSiYaFueProcesado(String key) {
+        File bitacora = new File("src/main/resources/archivosCM/bitacora.txt");
+        try (BufferedReader br = new BufferedReader(new FileReader(bitacora))) {
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                if (linea.contains(key) && linea.contains("PROCESSED")) {
+                    return true;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    @PostMapping("/cargaMasiva/procesar")
+    public ResponseEntity ProcesarCargaMasiva(@RequestParam("key") String key, HttpSession session) {
 
         Result result = new Result();
         List<Usuario> usuarios = new ArrayList<>();
 
         try {
-            String llaveSession = key;
-            Object objetoRuta = session.getAttribute(llaveSession);
+//            String llaveSession = key;
+            if (verificarSiYaFueProcesado(key)) {
+                return ResponseEntity.badRequest().body("Este archivo ya fue procesado anteriormente.");
+            }
+            
+            Object objetoRuta = session.getAttribute(key);
 
-            if (objetoRuta == null) {
-                return ResponseEntity.status(500).body("n");
+            String rutaReal = (objetoRuta != null) ? objetoRuta.toString() : buscarRutaEnBitacora(key);
+
+            if (rutaReal == null) {
+                return ResponseEntity.status(400).body("n");
             }
 
-            String rutaReal = objetoRuta.toString();
             File archivoFile = new File(rutaReal);
+            if (!archivoFile.exists()) {
+                return ResponseEntity.status(404).body("Error: El archivo físico ya no existe en la ruta: " + rutaReal);
+            }
 
             String extension = rutaReal.substring(rutaReal.lastIndexOf(".") + 1);
             if (extension.equals("txt")) {
@@ -633,18 +680,24 @@ public class UsuarioRestController {
 //                usuarios = LecturaArchivoXLSX(archivoFile);
             }
 
+            int insertados = 0;
             for (Usuario usuario : usuarios) {
                 result = usuarioDAOJPAImplementation.Add(usuario);
+                if (result.correct) {
+                    insertados++;
+                }
             }
 
             if (result.correct) {
-                session.removeAttribute(llaveSession);// Limpiar sesión
-                return ResponseEntity.ok().body("Usuarios cargador correctamente");
+                registrarEnBitacora(rutaReal, "SUCCESS", "PROCESADA", key);
+                session.removeAttribute(key);// Limpiar sesión
+                result.correct = true;
+                return ResponseEntity.ok().body(result);
             } else {
                 return ResponseEntity.badRequest().body(result.errorMessage);
             }
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(e.getLocalizedMessage());
+            return ResponseEntity.status(500).body(result);
         }
 
     }
