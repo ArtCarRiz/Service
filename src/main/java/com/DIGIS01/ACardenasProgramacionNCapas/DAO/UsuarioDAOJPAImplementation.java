@@ -15,6 +15,7 @@ import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Usuario;
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Direccion;
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Result;
 import java.util.ArrayList;
+import org.modelmapper.ModelMapper;
 import org.springframework.transaction.annotation.Transactional;
 
 
@@ -317,6 +318,32 @@ public class UsuarioDAOJPAImplementation implements IUsuarioJPA {
         }
         
         return result;
+    }
+
+    @Override
+    public Result GetByUserName(String username) {
+
+        Result result = new Result();
+
+        try {
+            TypedQuery<Usuario> queryUsuario = entityManager.createQuery("FROM Usuario WHERE Username = :pUsername", Usuario.class);
+            queryUsuario.setParameter("pUsername", username);
+            Usuario usuario = queryUsuario.getSingleResult();
+
+            /*JPA -> ML*/
+            ModelMapper modelMapper = new ModelMapper();
+
+            com.DIGIS01.ACardenasProgramacionNCapas.JPA.Usuario GetByUser = modelMapper.map(usuario, com.DIGIS01.ACardenasProgramacionNCapas.JPA.Usuario.class);
+
+            result.object = GetByUser;
+            result.correct = true;
+        } catch (Exception e) {
+            result.correct = false;
+            result.errorMessage = e.getLocalizedMessage();
+            result.ex = e;
+        }
+        return result;
+
     }
     
     

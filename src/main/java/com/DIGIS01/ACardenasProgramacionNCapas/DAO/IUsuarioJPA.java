@@ -25,4 +25,5 @@ public interface IUsuarioJPA {
     Result UpdateUsuario (Usuario usuario);
     Result UpdateEstatus (int identificador, int estatus);
     Result UpdateImage (int identificador, String imagen);
+    Result GetByUserName (String username);
 }
