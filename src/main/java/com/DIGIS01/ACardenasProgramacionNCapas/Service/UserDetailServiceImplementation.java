@@ -37,7 +37,7 @@ public class UserDetailServiceImplementation implements UserDetailsService {
                     .roles(usuario.Rol.getNombreRol())
                     .build();
         } else {
-            throw new UsernameNotFoundException("No se encontró el alumno con el correo: " + username);
+            throw new UsernameNotFoundException("No se encontró el alumno con el username: " + username);
         }
 
     }

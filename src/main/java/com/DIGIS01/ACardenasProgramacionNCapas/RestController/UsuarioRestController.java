@@ -45,6 +45,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
@@ -95,7 +96,6 @@ public class UsuarioRestController {
 
 //    @Autowired
 //    private HttpServletRequest request;
-    
     @GetMapping
     @PreAuthorize("hasRole('Ingeniero')")
     public ResponseEntity GetAll() {
@@ -126,21 +126,34 @@ public class UsuarioRestController {
      * @param idusuario el identificador del usuario
      * @return la info completa del usuario
      */
+//    @PreAuthorize("hasRole('Ingeniero') or #identificador == principal.idUsuario")
     @GetMapping("{idusuario}")
-    public ResponseEntity GetById(@PathVariable("idusuario") int idusuario) {
+    public ResponseEntity GetById(@PathVariable("idusuario") int idusuario, Authentication authentication) {
 
         try {
             Result result = usuarioDAOJPAImplementation.GetById(idusuario);
+            if (!result.correct || result.object == null) {
+            return ResponseEntity.status(404).body("Usuario no encontrado.");
+        }
+            Usuario usuarioSolicitado = (Usuario) result.object;
 
-            if (result.correct) {
-                if (result.object != null) {
-                    return ResponseEntity.ok(result);
+            String usernameLogueado = authentication.getName();
+            boolean esIngeniero = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_Ingeniero"));
+
+            if (esIngeniero || usuarioSolicitado.getUsername().equals(usernameLogueado)) {
+                if (result.correct) {
+                    if (result.object != null) {
+                        return ResponseEntity.ok(result);
+                    } else {
+                        return ResponseEntity.notFound().build();
+                    }
                 } else {
-                    return ResponseEntity.notFound().build();
+                    return ResponseEntity.badRequest().body(result.errorMessage);
                 }
-            } else {
-                return ResponseEntity.badRequest().body(result.errorMessage);
+
             }
+            return ResponseEntity.status(403).body("No tienes permiso para ver este perfil.");
 
         } catch (Exception e) {
             return ResponseEntity.status(500).body(e);
@@ -155,6 +168,7 @@ public class UsuarioRestController {
      * @return la info completa del usuario
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('Ingeniero')")
     public ResponseEntity Add(@RequestPart("datos") Usuario usuario, @RequestPart(name = "imagen", required = false) MultipartFile imagen) {
         try {
 
@@ -185,6 +199,7 @@ public class UsuarioRestController {
      * @return la info completa del usuario
      */
     @PostMapping("/Direccion")
+    @PreAuthorize("hasRole('Ingeniero')")
     public ResponseEntity AddDireccion(@RequestBody Direccion direccion, @RequestParam("identificador") int identificador) {
         try {
             Result result = usuarioDAOJPAImplementation.AddDireccion(direccion, identificador);
@@ -207,6 +222,7 @@ public class UsuarioRestController {
      * @return la info completa del usuario
      */
     @GetMapping("/Direccion/{IdDireccion}")
+    @PreAuthorize("hasRole('Ingeniero')")
     public ResponseEntity GetByIdDireccion(@PathVariable("IdDireccion") int identificador) {
         Result result = new Result();
         try {
@@ -229,7 +245,10 @@ public class UsuarioRestController {
      * @return la info completa del usuario
      */
     @DeleteMapping("/Delete/Direccion")
+    @PreAuthorize("hasRole('Ingeniero')")
     public ResponseEntity DeleteDireccion(@RequestParam("identificador") int identificador) {
+        //mandar a llamar getbyusername con el autherizacion.getname lo mando a Getbyusername = result.iddireccion
+        //comparamos el result.iddireccion con el iddireccion de DeleteDireccion
         try {
             Result result = usuarioDAOJPAImplementation.DeleteDireccion(identificador);
             if (result.correct) {
@@ -249,6 +268,7 @@ public class UsuarioRestController {
      *
      */
     @DeleteMapping("/Delete/Usuario/{identificador}")
+    @PreAuthorize("hasRole('Ingeniero')")
     public ResponseEntity DeleteUsuario(@PathVariable("identificador") int identificador) {
         try {
             Result result = usuarioDAOJPAImplementation.DeleteUsuario(identificador);
@@ -267,6 +287,7 @@ public class UsuarioRestController {
      * @param usuario un json usuario por medio del cuerpo
      */
     @PutMapping
+    @PreAuthorize("hasRole('Ingeniero')")
     public ResponseEntity UpdateUsuario(@RequestBody Usuario usuario) {
         try {
             Result result = usuarioDAOJPAImplementation.UpdateUsuario(usuario);
@@ -285,6 +306,7 @@ public class UsuarioRestController {
      * @return result
      */
     @PutMapping("/Direccion")
+    @PreAuthorize("hasRole('Ingeniero')")
     public ResponseEntity UpdateDireccion(@RequestBody Direccion direccion) {
         try {
             Result result = usuarioDAOJPAImplementation.UpdateDireccion(direccion);
@@ -304,6 +326,7 @@ public class UsuarioRestController {
      * @param imagen por @requestParam un multipartfile de la img
      */
     @PostMapping(value = "/Imagen", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('Ingeniero')")
     public ResponseEntity UpdateImagen(@RequestParam("identificador") int identificador, @RequestParam("imagenFile") MultipartFile imagen) {
         Result result = new Result();
         try {
@@ -323,6 +346,7 @@ public class UsuarioRestController {
     }
 
     @PatchMapping("/Estatus")
+    @PreAuthorize("hasRole('Ingeniero')")
     public ResponseEntity UpdateEstatus(@RequestParam("identificador") int identificador, @RequestParam("estatus") int estatus) {
         try {
             Result result = usuarioDAOJPAImplementation.UpdateEstatus(identificador, estatus);
@@ -353,74 +377,74 @@ public class UsuarioRestController {
         }
     }
 
-    /**
-     * @return result
-     */
-    @GetMapping("/Pais")
-    public ResponseEntity GetAllPais() {
-        try {
-            Result result = paisDAOImplementation.GetAll();
-            if (result.correct) {
-                return ResponseEntity.ok(result);
-            } else {
-                return ResponseEntity.badRequest().body(result.errorMessage);
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(e.getLocalizedMessage());
-        }
-    }
+//    /**
+//     * @return result
+//     */
+//    @GetMapping("/Pais")
+//    public ResponseEntity GetAllPais() {
+//        try {
+//            Result result = paisDAOImplementation.GetAll();
+//            if (result.correct) {
+//                return ResponseEntity.ok(result);
+//            } else {
+//                return ResponseEntity.badRequest().body(result.errorMessage);
+//            }
+//        } catch (Exception e) {
+//            return ResponseEntity.status(500).body(e.getLocalizedMessage());
+//        }
+//    }
 
-    /**
-     * @return result
-     */
-    @GetMapping("/Estado")
-    public ResponseEntity GetAllEstado(@RequestParam("identificador") int identificador) {
-        try {
-            Result result = estadoDAOImplementation.GetAll(identificador);
-            if (result.correct) {
-                return ResponseEntity.ok(result);
-            } else {
-                return ResponseEntity.badRequest().body(result.errorMessage);
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(e.getLocalizedMessage());
-        }
-    }
+//    /**
+//     * @return result
+//     */
+//    @GetMapping("/Estado")
+//    public ResponseEntity GetAllEstado(@RequestParam("identificador") int identificador) {
+//        try {
+//            Result result = estadoDAOImplementation.GetAll(identificador);
+//            if (result.correct) {
+//                return ResponseEntity.ok(result);
+//            } else {
+//                return ResponseEntity.badRequest().body(result.errorMessage);
+//            }
+//        } catch (Exception e) {
+//            return ResponseEntity.status(500).body(e.getLocalizedMessage());
+//        }
+//    }
 
-    /**
-     * @return result
-     */
-    @GetMapping("/Municipio")
-    public ResponseEntity GetAllMunicipio(@RequestParam("identificador") int identificador) {
-        try {
-            Result result = municipioDAOImplementation.GetAll(identificador);
-            if (result.correct) {
-                return ResponseEntity.ok(result);
-            } else {
-                return ResponseEntity.badRequest().body(result.errorMessage);
-            }
+//    /**
+//     * @return result
+//     */
+//    @GetMapping("/Municipio")
+//    public ResponseEntity GetAllMunicipio(@RequestParam("identificador") int identificador) {
+//        try {
+//            Result result = municipioDAOImplementation.GetAll(identificador);
+//            if (result.correct) {
+//                return ResponseEntity.ok(result);
+//            } else {
+//                return ResponseEntity.badRequest().body(result.errorMessage);
+//            }
+//
+//        } catch (Exception e) {
+//            return ResponseEntity.status(500).body(e.getLocalizedMessage());
+//        }
+//    }
 
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(e.getLocalizedMessage());
-        }
-    }
-
-    /**
-     * @return result
-     */
-    @GetMapping("/Colonia")
-    public ResponseEntity GetAllColonia(@RequestParam("identificador") int identificador) {
-        try {
-            Result result = coloniaDAOImplementation.GetAll(identificador);
-            if (result.correct) {
-                return ResponseEntity.ok(result);
-            } else {
-                return ResponseEntity.badRequest().body(result.errorMessage);
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(e.getLocalizedMessage());
-        }
-    }
+//    /**
+//     * @return result
+//     */
+//    @GetMapping("/Colonia")
+//    public ResponseEntity GetAllColonia(@RequestParam("identificador") int identificador) {
+//        try {
+//            Result result = coloniaDAOImplementation.GetAll(identificador);
+//            if (result.correct) {
+//                return ResponseEntity.ok(result);
+//            } else {
+//                return ResponseEntity.badRequest().body(result.errorMessage);
+//            }
+//        } catch (Exception e) {
+//            return ResponseEntity.status(500).body(e.getLocalizedMessage());
+//        }
+//    }
 
     /**
      * @param archivo un multipartfile por medio de @requestpart
@@ -662,7 +686,7 @@ public class UsuarioRestController {
             if (verificarSiYaFueProcesado(key)) {
                 return ResponseEntity.badRequest().body("Este archivo ya fue procesado anteriormente.");
             }
-            
+
             Object objetoRuta = session.getAttribute(key);
 
             String rutaReal = (objetoRuta != null) ? objetoRuta.toString() : buscarRutaEnBitacora(key);
