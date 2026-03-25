@@ -7,6 +7,8 @@ package com.DIGIS01.ACardenasProgramacionNCapas.Component;
 import com.DIGIS01.ACardenasProgramacionNCapas.configuration.*;
 import com.DIGIS01.ACardenasProgramacionNCapas.Service.JwtService;
 import com.DIGIS01.ACardenasProgramacionNCapas.Service.UserDetailServiceImplementation;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,6 +43,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
         final String username;
+        final String idUsuario;
 
         //q header traiga el Bearer Token
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -51,9 +54,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         jwt = authHeader.substring(7);
         username = jwtService.extractUsername(jwt);
 
+//        idUsuario = jwtService.extractIdUsuario();
+
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
-
+//            userDetails = this.userDetailsService.loadUserByUsername(idUsuario);
             if (jwtService.isTokenValid(jwt, userDetails)) {
                 //  token de autenticación para Spring
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(

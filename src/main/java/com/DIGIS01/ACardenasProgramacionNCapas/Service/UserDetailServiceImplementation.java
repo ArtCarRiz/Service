@@ -8,6 +8,7 @@ import com.DIGIS01.ACardenasProgramacionNCapas.DAO.UsuarioDAOJPAImplementation;
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Result;
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Usuario;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -32,10 +33,13 @@ public class UserDetailServiceImplementation implements UserDetailsService {
         if (true) {
             Usuario usuario = (Usuario) result.object;
 
-            return User.withUsername(usuario.getUsername())
-                    .password(usuario.getPassword())
-                    .roles(usuario.Rol.getNombreRol())
-                    .build();
+            return new CustomUserDetails(
+                usuario.getUsername(),
+                usuario.getPassword(),
+                usuario.getEstatus() != 0,
+                AuthorityUtils.createAuthorityList("ROLE_" + usuario.Rol.getNombreRol().trim()),
+                usuario.getIdUsuario() 
+        );
         } else {
             throw new UsernameNotFoundException("No se encontró el alumno con el username: " + username);
         }

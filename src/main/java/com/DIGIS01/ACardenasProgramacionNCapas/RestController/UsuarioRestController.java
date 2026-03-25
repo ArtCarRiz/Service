@@ -18,6 +18,8 @@ import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Result;
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Rol;
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Usuario;
 import com.DIGIS01.ACardenasProgramacionNCapas.Service.ValidationService;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.io.BufferedReader;
@@ -98,14 +100,15 @@ public class UsuarioRestController {
 //    private HttpServletRequest request;
     @GetMapping
     @PreAuthorize("hasRole('Ingeniero')")
-    public ResponseEntity GetAll() {
+    public ResponseEntity GetAll(Authentication authentication) {
         try {
-
             Result result = usuarioDAOJPAImplementation.GetAll();
 
             if (result.correct) {
 
                 if (result.objects != null || !result.objects.isEmpty()) {
+                    System.out.println(authentication.getDetails().toString());
+                    System.out.println(authentication);
                     return ResponseEntity.ok(result);
                 } else {
                     return ResponseEntity.noContent().build();
@@ -133,8 +136,8 @@ public class UsuarioRestController {
         try {
             Result result = usuarioDAOJPAImplementation.GetById(idusuario);
             if (!result.correct || result.object == null) {
-            return ResponseEntity.status(404).body("Usuario no encontrado.");
-        }
+                return ResponseEntity.status(404).body("Usuario no encontrado.");
+            }
             Usuario usuarioSolicitado = (Usuario) result.object;
 
             String usernameLogueado = authentication.getName();
@@ -162,13 +165,12 @@ public class UsuarioRestController {
     }
 
     /**
-     * GetById del usuario con direcciion
-     *
-     * @param idusuario el identificador del usuario
+     * @param usuario
+     * @param imagen
      * @return la info completa del usuario
      */
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('Ingeniero')")
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity Add(@RequestPart("datos") Usuario usuario, @RequestPart(name = "imagen", required = false) MultipartFile imagen) {
         try {
 
@@ -200,15 +202,27 @@ public class UsuarioRestController {
      */
     @PostMapping("/Direccion")
     @PreAuthorize("hasRole('Ingeniero')")
-    public ResponseEntity AddDireccion(@RequestBody Direccion direccion, @RequestParam("identificador") int identificador) {
+    public ResponseEntity AddDireccion(@RequestBody Direccion direccion, @RequestParam("identificador") int identificador, Authentication authentication) {
         try {
-            Result result = usuarioDAOJPAImplementation.AddDireccion(direccion, identificador);
 
-            if (result.correct) {
-                return ResponseEntity.ok(result.object);
-            } else {
-                return ResponseEntity.badRequest().body(result.errorMessage);
+            Result result = usuarioDAOJPAImplementation.GetById(identificador);
+            Usuario usuarioSolicitado = (Usuario) result.object;
+
+            String usernameLogueado = authentication.getName();
+            boolean esIngeniero = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_Ingeniero"));
+
+            if (esIngeniero || usuarioSolicitado.getUsername().equals(usernameLogueado)) {
+
+                result = usuarioDAOJPAImplementation.AddDireccion(direccion, identificador);
+
+                if (result.correct) {
+                    return ResponseEntity.ok(result.object);
+                } else {
+                    return ResponseEntity.badRequest().body(result.errorMessage);
+                }
             }
+            return ResponseEntity.status(403).body("No tienes permiso para ver este perfil.");
 
         } catch (Exception e) {
             return ResponseEntity.status(500).body(e.getMessage());
@@ -241,21 +255,45 @@ public class UsuarioRestController {
     /**
      * Borra una sola direccion
      *
-     * @param idusuario el identificador del usuario
+     * @param identificador
+     * @param authentication
      * @return la info completa del usuario
      */
     @DeleteMapping("/Delete/Direccion")
     @PreAuthorize("hasRole('Ingeniero')")
-    public ResponseEntity DeleteDireccion(@RequestParam("identificador") int identificador) {
+    public ResponseEntity DeleteDireccion(@RequestParam("identificador") int identificador, Authentication authentication) {
         //mandar a llamar getbyusername con el autherizacion.getname lo mando a Getbyusername = result.iddireccion
         //comparamos el result.iddireccion con el iddireccion de DeleteDireccion
         try {
-            Result result = usuarioDAOJPAImplementation.DeleteDireccion(identificador);
-            if (result.correct) {
-                return ResponseEntity.ok("exito en el borrado " + result);
-            } else {
-                return ResponseEntity.badRequest().body(result.errorMessage);
+
+            Result result = usuarioDAOJPAImplementation.GetByUserName(authentication.getName());
+            Usuario usuario = (Usuario) result.object;
+            
+            Direccion direccion = usuario.Direcciones.get(0);
+            
+            boolean esIngeniero = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_Ingeniero"));
+
+            if (esIngeniero) {
+                result = usuarioDAOJPAImplementation.DeleteDireccion(identificador);
+                if (result.correct) {
+                    return ResponseEntity.ok("exito en el borrado " + result);
+                } else {
+                    return ResponseEntity.badRequest().body(result.errorMessage);
+                }
+            } else if (usuario.getUsername().equals(authentication.getName())) {
+                if (identificador == direccion.getIdDireccion()) {
+                    Result result2 = new Result();
+                    result2 = usuarioDAOJPAImplementation.DeleteDireccion(identificador);
+                    if (result2.correct) {
+                        return ResponseEntity.ok("exito en el borrado " + result2);
+                    } else {
+                        return ResponseEntity.badRequest().body(result2.errorMessage);
+                    }
+                }
             }
+
+            return ResponseEntity.status(403).body("No tienes permiso para eliminar esta direccion.");
 
         } catch (Exception e) {
             return ResponseEntity.status(500).body(e.getLocalizedMessage());
@@ -364,6 +402,7 @@ public class UsuarioRestController {
      * @return result
      */
     @GetMapping("/Rol")
+    @PreAuthorize("hasRole('Ingeniero')")
     public ResponseEntity GetAllRol() {
         try {
             Result result = rolDaoImplementation.GetAll();
@@ -393,7 +432,6 @@ public class UsuarioRestController {
 //            return ResponseEntity.status(500).body(e.getLocalizedMessage());
 //        }
 //    }
-
 //    /**
 //     * @return result
 //     */
@@ -410,7 +448,6 @@ public class UsuarioRestController {
 //            return ResponseEntity.status(500).body(e.getLocalizedMessage());
 //        }
 //    }
-
 //    /**
 //     * @return result
 //     */
@@ -428,7 +465,6 @@ public class UsuarioRestController {
 //            return ResponseEntity.status(500).body(e.getLocalizedMessage());
 //        }
 //    }
-
 //    /**
 //     * @return result
 //     */
@@ -445,7 +481,6 @@ public class UsuarioRestController {
 //            return ResponseEntity.status(500).body(e.getLocalizedMessage());
 //        }
 //    }
-
     /**
      * @param archivo un multipartfile por medio de @requestpart
      * @param session no se envia nada

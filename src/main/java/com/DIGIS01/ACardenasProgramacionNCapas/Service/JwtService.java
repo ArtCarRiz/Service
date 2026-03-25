@@ -4,6 +4,9 @@
  */
 package com.DIGIS01.ACardenasProgramacionNCapas.Service;
 
+import com.DIGIS01.ACardenasProgramacionNCapas.DAO.UsuarioDAOJPAImplementation;
+import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Result;
+import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Usuario;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
@@ -14,6 +17,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import javax.crypto.SecretKey;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +28,10 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class JwtService {
+    
+    @Autowired
+    @Lazy
+    UsuarioDAOJPAImplementation usuarioDAOJPAImplementation;
 
     private static final String SECRET__KEY = "$2a$12$mnKoNNIrH6vnx5Vu7qerae.H3lNslCFoYy3fDhzvqdJTekyaNsjsS";
     private static final long EXPIRATION_TIME = 3600000;
@@ -33,8 +42,12 @@ public class JwtService {
     }
 
     public String generateToken(UserDetails user) {
+        Result result = usuarioDAOJPAImplementation.GetByUserName(user.getUsername());
+        Usuario usuario = (Usuario) result.object;
+        
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("role", user.getAuthorities());
+        extraClaims.put("idUsuario", usuario.getIdUsuario());
 
         return Jwts.builder()
                 .claims(extraClaims)
@@ -53,6 +66,10 @@ public class JwtService {
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
+    
+//    public String extractIdUsuario() {
+//        return extractClaim("idUsuario", Claims::getId);
+//    }
 
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = Jwts.parser()
