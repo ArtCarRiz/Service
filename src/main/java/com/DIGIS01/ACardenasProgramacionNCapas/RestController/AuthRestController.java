@@ -4,6 +4,7 @@
  */
 package com.DIGIS01.ACardenasProgramacionNCapas.RestController;
 
+import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Result;
 import com.DIGIS01.ACardenasProgramacionNCapas.Service.JwtService;
 import com.DIGIS01.ACardenasProgramacionNCapas.Service.UserDetailServiceImplementation;
 import java.util.HashMap;
@@ -44,6 +45,7 @@ public class AuthRestController {
 
         UserDetails user = userDetailsService.loadUserByUsername(loginRequest.get("username"));
 
+        
         //validacion falta
         if (user == null ) {
              return ResponseEntity.status(500).body("acceso no autorizado");
@@ -52,7 +54,11 @@ public class AuthRestController {
         String token = jwtService.generateToken(user);
         Map<String, Object> map = new HashMap<>();
         map.put("key", token);
-        return ResponseEntity.ok(map);
+        Result result = new Result();
+        result.object = map.get("key");
+        result.correct = true;
+        
+        return ResponseEntity.ok(result);
 
     }
 

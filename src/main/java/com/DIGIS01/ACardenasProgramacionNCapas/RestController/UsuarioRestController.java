@@ -17,6 +17,7 @@ import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Municipio;
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Result;
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Rol;
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Usuario;
+import com.DIGIS01.ACardenasProgramacionNCapas.Service.CustomUserDetails;
 import com.DIGIS01.ACardenasProgramacionNCapas.Service.ValidationService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -33,6 +34,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.Principal;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -48,6 +50,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
@@ -108,7 +111,8 @@ public class UsuarioRestController {
 
                 if (result.objects != null || !result.objects.isEmpty()) {
                     System.out.println(authentication.getDetails().toString());
-                    System.out.println(authentication);
+                    System.out.println(authentication.getPrincipal().toString());
+//                    System.out.println();
                     return ResponseEntity.ok(result);
                 } else {
                     return ResponseEntity.noContent().build();
@@ -122,14 +126,14 @@ public class UsuarioRestController {
             return ResponseEntity.status(500).body(e);
         }
     }
-
+    
     /**
      * GetById del usuario con direcccion
      *
      * @param idusuario el identificador del usuario
      * @return la info completa del usuario
      */
-//    @PreAuthorize("hasRole('Ingeniero') or #identificador == principal.idUsuario")
+    @PreAuthorize("hasRole('Ingeniero') or #idusuario == principal.idUsuario")
     @GetMapping("{idusuario}")
     public ResponseEntity GetById(@PathVariable("idusuario") int idusuario, Authentication authentication) {
 
@@ -143,7 +147,7 @@ public class UsuarioRestController {
             String usernameLogueado = authentication.getName();
             boolean esIngeniero = authentication.getAuthorities().stream()
                     .anyMatch(a -> a.getAuthority().equals("ROLE_Ingeniero"));
-
+//            boolean esInfe = authentication.getAuthorities().equals("ROLE_Ingeniero");
             if (esIngeniero || usuarioSolicitado.getUsername().equals(usernameLogueado)) {
                 if (result.correct) {
                     if (result.object != null) {
@@ -201,7 +205,7 @@ public class UsuarioRestController {
      * @return la info completa del usuario
      */
     @PostMapping("/Direccion")
-    @PreAuthorize("hasRole('Ingeniero')")
+    @PreAuthorize("hasRole('Ingeniero') or #identificador == principal.idUsuario")
     public ResponseEntity AddDireccion(@RequestBody Direccion direccion, @RequestParam("identificador") int identificador, Authentication authentication) {
         try {
 
@@ -241,6 +245,7 @@ public class UsuarioRestController {
         Result result = new Result();
         try {
             result = usuarioDAOJPAImplementation.GetByIdDireccion(identificador);
+
             if (result.correct) {
                 return ResponseEntity.ok(result);
             } else {
@@ -260,35 +265,43 @@ public class UsuarioRestController {
      * @return la info completa del usuario
      */
     @DeleteMapping("/Delete/Direccion")
-    @PreAuthorize("hasRole('Ingeniero')")
+    @PreAuthorize("hasAnyRole('Ingeniero', 'Residente', 'Licenciado')")
     public ResponseEntity DeleteDireccion(@RequestParam("identificador") int identificador, Authentication authentication) {
         //mandar a llamar getbyusername con el autherizacion.getname lo mando a Getbyusername = result.iddireccion
         //comparamos el result.iddireccion con el iddireccion de DeleteDireccion
         try {
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            int idUsuarioLogueado = userDetails.getIdUsuario();
 
-            Result result = usuarioDAOJPAImplementation.GetByUserName(authentication.getName());
-            Usuario usuario = (Usuario) result.object;
-            
-            Direccion direccion = usuario.Direcciones.get(0);
-            
             boolean esIngeniero = authentication.getAuthorities().stream()
                     .anyMatch(a -> a.getAuthority().equals("ROLE_Ingeniero"));
 
             if (esIngeniero) {
-                result = usuarioDAOJPAImplementation.DeleteDireccion(identificador);
+                Result result = usuarioDAOJPAImplementation.DeleteDireccion(identificador);
                 if (result.correct) {
                     return ResponseEntity.ok("exito en el borrado " + result);
                 } else {
                     return ResponseEntity.badRequest().body(result.errorMessage);
                 }
-            } else if (usuario.getUsername().equals(authentication.getName())) {
-                if (identificador == direccion.getIdDireccion()) {
-                    Result result2 = new Result();
-                    result2 = usuarioDAOJPAImplementation.DeleteDireccion(identificador);
-                    if (result2.correct) {
-                        return ResponseEntity.ok("exito en el borrado " + result2);
+            }
+
+            Result resultUser = usuarioDAOJPAImplementation.GetById(idUsuarioLogueado);
+            Usuario usuario = (Usuario) resultUser.object;
+
+            if (usuario != null && usuario.Direcciones != null) {
+
+                boolean esSuya = usuario.Direcciones.stream()
+                        .anyMatch(d -> d.getIdDireccion() == identificador);
+
+                if (esSuya) {
+                    Result rDireccion = usuarioDAOJPAImplementation.GetByIdDireccion(identificador);
+                    Direccion direccion = (Direccion) rDireccion.object;
+                    usuario.Direcciones.remove(direccion);
+                    Result resultDel = usuarioDAOJPAImplementation.DeleteDireccion(identificador);
+                    if (resultDel.correct) {
+                        return ResponseEntity.ok("Exito en el borrado " + resultDel);
                     } else {
-                        return ResponseEntity.badRequest().body(result2.errorMessage);
+                        ResponseEntity.badRequest().body(resultDel.errorMessage);
                     }
                 }
             }
@@ -323,11 +336,30 @@ public class UsuarioRestController {
 
     /**
      * @param usuario un json usuario por medio del cuerpo
+     * @param identificador
+     * @param authentication
+     * @return
      */
     @PutMapping
-    @PreAuthorize("hasRole('Ingeniero')")
-    public ResponseEntity UpdateUsuario(@RequestBody Usuario usuario) {
+    @PreAuthorize("permitAll()")
+    public ResponseEntity UpdateUsuario(@RequestBody Usuario usuario, @RequestParam(required = false) Integer identificador, Authentication authentication) {
         try {
+
+            CustomUserDetails userCustom = (CustomUserDetails) authentication.getPrincipal();
+            int idUsuarioLogeado = userCustom.getIdUsuario();
+
+            boolean esIngeniero = authentication.getAuthorities().stream()
+                    .anyMatch(u -> u.getAuthority().equals("ROLE_Ingeniero"));
+
+            if (identificador != null) {
+                if (!esIngeniero) {
+                    return ResponseEntity.status(400).body("No puedes actualizar si no eres Ingeniero");
+                }
+                usuario.setIdUsuario(identificador);
+            } else {
+                usuario.setIdUsuario(idUsuarioLogeado);
+            }
+
             Result result = usuarioDAOJPAImplementation.UpdateUsuario(usuario);
             if (result.correct) {
                 return ResponseEntity.ok(result);
@@ -341,12 +373,39 @@ public class UsuarioRestController {
 
     /**
      * @param direccion object de direccion
+     * @param identificador
+     * @param authentication
      * @return result
      */
     @PutMapping("/Direccion")
-    @PreAuthorize("hasRole('Ingeniero')")
-    public ResponseEntity UpdateDireccion(@RequestBody Direccion direccion) {
+    @PreAuthorize("hasAnyRole('Ingeniero', 'Residente', 'Licenciado')")
+    public ResponseEntity UpdateDireccion(@RequestBody Direccion direccion, @RequestParam(required = false) Integer identificador, Authentication authentication) {
         try {
+
+            CustomUserDetails userCustom = (CustomUserDetails) authentication.getPrincipal();
+            int idUsuarioLogeado = userCustom.getIdUsuario();
+
+            boolean esIngeniero = authentication.getAuthorities().stream()
+                    .anyMatch(u -> u.getAuthority().equals("ROLE_Ingeniero"));
+
+            if (identificador != null) {
+                if (!esIngeniero) {
+                    return ResponseEntity.status(400).body("No puedes actualizar esa informacion sin ser Ingeniero");
+                }
+                direccion.setIdDireccion(identificador);
+            } else {
+                Result resultDireccion = usuarioDAOJPAImplementation.GetByIdDireccion(direccion.getIdDireccion());
+                Direccion direccionBD = (Direccion) resultDireccion.object;
+                
+                if (!resultDireccion.correct || resultDireccion.object == null) {
+                    return ResponseEntity.status(400).body("Esa direccion no existe");
+                }
+                if (direccionBD.getUsuario().getIdUsuario() != idUsuarioLogeado) {
+                    return ResponseEntity.status(400).body("No tienes permiso para editar esa direccion");
+                }
+                direccion.setUsuario(direccionBD.getUsuario());
+            }
+
             Result result = usuarioDAOJPAImplementation.UpdateDireccion(direccion);
             if (result.correct) {
                 return ResponseEntity.ok().body(result);

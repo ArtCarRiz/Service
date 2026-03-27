@@ -43,7 +43,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
         final String username;
-        final String idUsuario;
+//        final String idUsuario;
 
         //q header traiga el Bearer Token
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {

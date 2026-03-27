@@ -28,7 +28,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class JwtService {
-    
+
     @Autowired
     @Lazy
     UsuarioDAOJPAImplementation usuarioDAOJPAImplementation;
@@ -44,10 +44,17 @@ public class JwtService {
     public String generateToken(UserDetails user) {
         Result result = usuarioDAOJPAImplementation.GetByUserName(user.getUsername());
         Usuario usuario = (Usuario) result.object;
+
         
+
         Map<String, Object> extraClaims = new HashMap<>();
+        
+        if (user instanceof CustomUserDetails) {
+            extraClaims.put("idUsuario", ((CustomUserDetails) user).getIdUsuario());
+        }
+        
         extraClaims.put("role", user.getAuthorities());
-        extraClaims.put("idUsuario", usuario.getIdUsuario());
+//        extraClaims.put("idUsuario", usuario.getIdUsuario());
 
         return Jwts.builder()
                 .claims(extraClaims)
@@ -66,11 +73,10 @@ public class JwtService {
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
-    
+
 //    public String extractIdUsuario() {
 //        return extractClaim("idUsuario", Claims::getId);
 //    }
-
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = Jwts.parser()
                 .verifyWith(getSignKey())
