@@ -54,6 +54,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -444,7 +445,7 @@ public class UsuarioRestController {
 
     @PatchMapping("/Estatus")
     @PreAuthorize("hasRole('Ingeniero')")
-    public ResponseEntity UpdateEstatus(@RequestParam("identificador") int identificador, @RequestParam("estatus") int estatus) {
+    public ResponseEntity UpdateEstatus(@RequestParam("identificador") int identificador, @RequestParam("estatus") int estatus, @CookieValue(name = "token", required = false) String token) {
         try {
             Result result = usuarioDAOJPAImplementation.UpdateEstatus(identificador, estatus);
             if (result.correct) {

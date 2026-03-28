@@ -8,6 +8,7 @@ import com.DIGIS01.ACardenasProgramacionNCapas.DAO.ColoniaDAOImplementation;
 import com.DIGIS01.ACardenasProgramacionNCapas.JPA.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -20,14 +21,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("api/colonia")
 public class ColoniaRestController {
-    
+
     @Autowired
     ColoniaDAOImplementation coloniaDAOImplementation;
-    
-        /**
+
+    /**
      * @return result
      */
-    @GetMapping("/Colonia")
+    @GetMapping
+    @PreAuthorize("hasAnyRole('Ingeniero', 'Residente', 'Licenciado')")
     public ResponseEntity GetAllColonia(@RequestParam("identificador") int identificador) {
         try {
             Result result = coloniaDAOImplementation.GetAll(identificador);
@@ -41,5 +43,4 @@ public class ColoniaRestController {
         }
     }
 
-    
 }

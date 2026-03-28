@@ -50,13 +50,14 @@ public class AuthRestController {
         if (user == null ) {
              return ResponseEntity.status(500).body("acceso no autorizado");
         }
-
+        
         String token = jwtService.generateToken(user);
         Map<String, Object> map = new HashMap<>();
         map.put("key", token);
         Result result = new Result();
         result.object = map.get("key");
         result.correct = true;
+        result.errorMessage = user.getAuthorities().toString();
         
         return ResponseEntity.ok(result);
 
