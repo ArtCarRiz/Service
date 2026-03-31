@@ -70,6 +70,7 @@ public class UsuarioDAOJPAImplementation implements IUsuarioJPA {
             usuariojpa.setSexo(usuario.getSexo());
             usuariojpa.setCelular(usuario.getCelular());
             usuariojpa.setCurp(usuario.getCurp());
+            usuariojpa.setEstatus(1);
             usuariojpa.Rol = new Rol();
             usuariojpa.Rol.setIdRol(usuario.Rol.getIdRol());
             usuariojpa.setImagen(usuario.getImagen());

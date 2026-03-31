@@ -188,7 +188,7 @@ public class UsuarioRestController {
             Result result = usuarioDAOJPAImplementation.Add(usuario);
 
             if (result.correct) {
-                return ResponseEntity.ok(result.object);
+                return ResponseEntity.ok(result);
             } else {
                 return ResponseEntity.badRequest().body(result.errorMessage);
             }
