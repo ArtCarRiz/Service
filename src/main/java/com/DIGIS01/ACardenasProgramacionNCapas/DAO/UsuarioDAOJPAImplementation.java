@@ -260,6 +260,7 @@ public class UsuarioDAOJPAImplementation implements IUsuarioJPA {
                 //ML -> JPA
                 usuario.setImagen(usuarioBD.getImagen());
                 usuario.setPassword(usuarioBD.getPassword());
+                usuarioBD.Rol = new Rol();
                 usuario.Rol.setIdRol(usuarioBD.Rol.getIdRol());
                 usuario.setEstatus(usuarioBD.getEstatus());
                 usuario.Direcciones = usuarioBD.Direcciones;
